@@ -255,28 +255,20 @@ jobs:
         run: |
           # 进入内核工作目录
           cd kernel_workspace
-            if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
+          if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             echo "正在配置SukiSU Ultra..."
-            # 手动克隆仓库（不使用 setup.sh，避免符号链接兼容问题）
-            git clone https://github.com/SukiSU-Ultra/SukiSU-Ultra.git ./KernelSU
-            cd ./KernelSU
-            # 修复 uapi 符号链接（CI 环境可能断裂）
-            if [ -L "kernel/include/uapi" ] && [ ! -e "kernel/include/uapi/app_profile.h" ]; then
-              rm -f kernel/include/uapi
-              ln -s ../../uapi kernel/include/uapi
-            fi
-            cd ..
-            # 创建 drivers/kernelsu 符号链接并配置内核编译
-            cd ./common/drivers
-            ln -sf "$(realpath --relative-to=. ../../KernelSU/kernel)" kernelsu
-            grep -q "kernelsu" Makefile || printf "\nobj-\$(CONFIG_KSU) += kernelsu/\n" >> Makefile
-            grep -q "drivers/kernelsu/Kconfig" Kconfig || sed -i "/endmenu/i\source \"drivers/kernelsu/Kconfig\"" Kconfig
-            cd ../..
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
             echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%@SukiSU-Ultra"' >> ./common/arch/arm64/configs/gki_defconfig
             cd ./KernelSU
+            # 修复 SukiSU Ultra 头文件路径（添加绝对路径 include）
+            KSU_ROOT=$(pwd)
+            echo "ccflags-y += -I${KSU_ROOT}/kernel/include" >> kernel/Kbuild
+            echo "ccflags-y += -I${KSU_ROOT}" >> kernel/Kbuild
             # 生成自定义版本号（基于提交计数）, 失败时使用 114514
             KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
             # 存储版本号到 GitHub 环境变量
+            echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+            echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
             echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
