@@ -130,9 +130,9 @@ jobs:
           rm -f ./ccache &
           
           echo "正在克隆源码仓库..."
-          aria2c -s16 -x16 -k1M https://github.com/cctv18/android_gki_kernel_common/archive/refs/heads/android16-6.12-2025-06.zip -o common.zip && 
+          aria2c -s16 -x16 -k1M https://github.com/OnePlusOSS/android_kernel_oneplus_sm8850/archive/refs/heads/oneplus/sm8850_b_16.0.0_oneplus_15.zip -o common.zip && 
           unzip -q common.zip && 
-          mv "android_gki_kernel_common-android16-6.12-2025-06" common &&
+          mv "android_kernel_oneplus_sm8850-oneplus-sm8850_b_16.0.0_oneplus_15" common &&
           rm -rf common.zip &
           
           echo "正在克隆llvm-clang19工具链..." &&
@@ -841,7 +841,7 @@ jobs:
           ### 📱 欧加真米 ${{ env.KSU_TYPENAME }} sm8850 通用内核 | 构建信息
           - 内核版本号: ${{ env.FULL_VERSION }}
           - 编译时间: ${{ env.TIME_FORM }}
-          - 机型：欧加真骁龙8E Gen5通用 ${{ env.KERNEL_VERSION }}.${{ env.SUB_VERSION }} 内核（基于 AOSP 官方 android16-6.12-2025-06 源码分支）
+          - 机型：一加15 ${{ env.KERNEL_VERSION }}.${{ env.SUB_VERSION }} 内核（基于一加官方 OnePlusOSS/android_kernel_oneplus_sm8850 源码分支）
           - KSU分支：${{ env.KSU_TYPENAME }}
           - susfs支持：${{ github.event.inputs.susfs_enable }}
           - KPM支持 ：${{ github.event.inputs.kpm_enable }}
