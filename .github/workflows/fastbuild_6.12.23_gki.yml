@@ -258,6 +258,13 @@ jobs:
             if [ ! -e ./common/drivers/kernelsu ]; then
               ln -sf ../../KernelSU/kernel ./common/drivers/kernelsu
             fi
+            # 确保内核构建系统能找到 KSU 源码目录
+            if ! grep -q 'kernelsu/Kconfig' ./common/drivers/Kconfig 2>/dev/null; then
+              echo 'source "drivers/kernelsu/Kconfig"' >> ./common/drivers/Kconfig
+            fi
+            if ! grep -q 'kernelsu/' ./common/drivers/Makefile 2>/dev/null; then
+              echo 'obj-$(CONFIG_KSU) += kernelsu/' >> ./common/drivers/Makefile
+            fi
             cd ./KernelSU
             # builtin 分支的 Makefile 不编译子目录，手动创建完整 Kbuild
             cat > kernel/Kbuild << 'KBUILD_EOF'
