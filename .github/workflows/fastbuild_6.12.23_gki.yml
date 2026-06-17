@@ -254,6 +254,10 @@ jobs:
             echo "正在配置SukiSU Ultra..."
             curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
             echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%@SukiSU-Ultra"' >> ./common/arch/arm64/configs/gki_defconfig
+            # 确保 KSU 内核源码被链接到内核构建树中
+            if [ ! -e ./common/drivers/kernelsu ]; then
+              ln -sf ../../KernelSU/kernel ./common/drivers/kernelsu
+            fi
             cd ./KernelSU
             # builtin 分支的 Makefile 不编译子目录，手动创建完整 Kbuild
             cat > kernel/Kbuild << 'KBUILD_EOF'
