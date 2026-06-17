@@ -257,18 +257,18 @@ jobs:
             cd ./KernelSU
             # builtin 分支的 Makefile 不编译子目录，手动创建完整 Kbuild
             cat > kernel/Kbuild << 'KBUILD_EOF'
-            ksu-y := ksu.o
-            ksu-y += feature/adb_root.o
-            ksu-y += feature/kernel_umount.o
-            ksu-y += feature/selinux_hide.o
-            ksu-y += feature/sucompat.o
-            ksu-y += feature/sulog.o
-            ksu-y += hook/lsm_hook.o
-            ksu-y += kpm/compact.o
-            ksu-y += kpm/kpm.o
-            ksu-y += kpm/super_access.o
-            ksu-y += manager/apk_sign.o
-            KBUILD_EOF
+          ksu-y := ksu.o
+          ksu-y += feature/adb_root.o
+          ksu-y += feature/kernel_umount.o
+          ksu-y += feature/selinux_hide.o
+          ksu-y += feature/sucompat.o
+          ksu-y += feature/sulog.o
+          ksu-y += hook/lsm_hook.o
+          ksu-y += kpm/compact.o
+          ksu-y += kpm/kpm.o
+          ksu-y += kpm/super_access.o
+          ksu-y += manager/apk_sign.o
+          KBUILD_EOF
             # 生成自定义版本号（基于提交计数）, 失败时使用 114514
             KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
             # 存储版本号到 GitHub 环境变量
