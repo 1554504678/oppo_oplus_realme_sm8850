@@ -348,6 +348,17 @@ jobs:
         if: inputs.susfs_enable
         run: |
           cd kernel_workspace
+          # 在 fs/Kconfig 中注册 CONFIG_KSU_SUSFS 选项（补丁文件未包含此修改）
+          if ! grep -q "config KSU_SUSFS" ./common/fs/Kconfig; then
+            cat >> ./common/fs/Kconfig << 'EOF'
+
+          config KSU_SUSFS
+          bool "KernelSU SUSFS support"
+          default y
+          help
+          Enable SUSFS support for KernelSU.
+          EOF
+          fi
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
