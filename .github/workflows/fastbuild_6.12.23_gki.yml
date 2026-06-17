@@ -260,14 +260,6 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
             echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%@SukiSU-Ultra"' >> ./common/arch/arm64/configs/gki_defconfig
             cd ./KernelSU
-            # 给 SukiSU-Ultra 添加 SUSFS 和 selinux_hide 源文件到 Kbuild
-            cat >> kernel/Kbuild << 'KBUILD_EOF'
-            ksu-y += feature/selinux_hide.o
-            ksu-y += hook/lsm_hook.o
-            ccflags-y += -D CONFIG_KSU_SUSFS -D CONFIG_KSU_MANUAL_HOOK
-            KBUILD_EOF
-            cd ..
-            cd ./KernelSU
             # 修复 SukiSU Ultra 头文件路径（添加绝对路径 include）
             KSU_ROOT=$(pwd)
             if [ -f "kernel/Kbuild" ]; then
@@ -339,6 +331,13 @@ jobs:
             cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
             cd ./KernelSU
             patch -p1 < 10_enable_susfs_for_ksu.patch || true
+          fi
+          if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
+            echo "正在为 SukiSU Ultra 添加SUSFS补丁..."
+            cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+            cd ./KernelSU
+            patch -p1 < 10_enable_susfs_for_ksu.patch || true
+            cd ..
           fi
           
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
