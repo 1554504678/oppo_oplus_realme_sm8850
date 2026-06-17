@@ -159,7 +159,6 @@ jobs:
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
-
       - name: 配置ccache目录
         run: |
           echo "CCACHE_DIR=$HOME/.ccache_${{ env.KERNEL_VERSION }}.${{ env.SUB_VERSION }}" >> $GITHUB_ENV
@@ -173,7 +172,6 @@ jobs:
             CCACHE_REAL_KEY=${{ env.CCACHE_KEY }}-none
           fi
           echo "CCACHE_REAL_KEY=$CCACHE_REAL_KEY" >> $GITHUB_ENV
-
       - name: 载入当前版本内核的 ccache缓存
         uses: actions/cache@v5
         id: ccache-restore
@@ -183,7 +181,6 @@ jobs:
           restore-keys: |
             ${{ env.CCACHE_REAL_KEY }}-${{ runner.os }}-
             ${{ env.CCACHE_REAL_KEY }}-
-
       - name: 拉取公共预置 ccache 缓存
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -209,7 +206,6 @@ jobs:
           else
             echo "公共 ccache 中未找到对应的 ccache 文件，将进行全量全新编译..."
           fi
-
       - name: 清除旧 ccache 缓存
         if: inputs.ccache_update
         env:
@@ -249,7 +245,6 @@ jobs:
             echo "ccache缓存命中详情:"
             ccache -sv
           fi
-
       - name: 添加KernelSU
         id: ksu_version
         run: |
@@ -257,25 +252,18 @@ jobs:
           cd kernel_workspace
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             echo "正在配置SukiSU Ultra..."
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
             echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%@SukiSU-Ultra"' >> ./common/arch/arm64/configs/gki_defconfig
             cd ./KernelSU
-
-            # 修复 builtin 分支与 6.12 内核 LSM API 不兼容问题
-            # 6.12 内核 security_add_hooks 第3个参数从 const char* 变为 const struct lsm_id*
-            sed -i '/security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks), "ksu");/{
-              s/security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks), "ksu");/static const struct lsm_id ksu_lsmid = { .name = "ksu", .id = 0 };\n    security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks), \&ksu_lsmid);/
-            }' kernel/hook/lsm_hook.c
-
-            # 修复头文件路径（builtin 分支没有 Kbuild，只有 Makefile，不要创建 Kbuild）
+            # 修复 SukiSU Ultra 头文件路径（添加绝对路径 include）
             KSU_ROOT=$(pwd)
-            if [ -f "kernel/Kbuild" ]; then
-                echo "ccflags-y += -I${KSU_ROOT}/kernel/include" >> kernel/Kbuild
-                echo "ccflags-y += -I${KSU_ROOT}" >> kernel/Kbuild
-            fi
-
-            # 生成自定义版本号
+            echo "ccflags-y += -I${KSU_ROOT}/kernel/include" >> kernel/Kbuild
+            echo "ccflags-y += -I${KSU_ROOT}" >> kernel/Kbuild
+            # 生成自定义版本号（基于提交计数）, 失败时使用 114514
             KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
+            # 存储版本号到 GitHub 环境变量
+            echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+            echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
             echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
@@ -314,7 +302,6 @@ jobs:
           else
             echo "已选择无内置KernelSU模式，跳过KernelSU配置..."
           fi
-
       - name: 应用 KernelSU & SUSFS 补丁
         if: inputs.susfs_enable
         run: |
@@ -331,7 +318,6 @@ jobs:
           else
             echo "已选择无内置KernelSU模式，跳过susfs配置..."
           fi
-
           if [[ ${{ github.event.inputs.ksu_type }} == "ksu" ]]; then
             echo "正在为原版 KernelSU (tiann/KernelSU)添加补丁..."
             cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
@@ -350,7 +336,6 @@ jobs:
           cd ./common
           patch -p1 < 001-lz4.patch || true
           patch -p1 < 002-zstd.patch || true
-
       - name: 应用 lz4kd 补丁
         if: inputs.lz4kd_enable
         run: |
@@ -444,7 +429,6 @@ jobs:
           cd common
           wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/other_patch/config.patch
           patch -p1 -F 3 < config.patch || true
-
       - name: 添加 BBR 等一系列拥塞控制算法
         run: |
           if [[ "${{ github.event.inputs.bbr_enable }}" != "false" ]]; then
@@ -484,7 +468,6 @@ jobs:
               echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> ./common/arch/arm64/configs/gki_defconfig
             fi
           fi
-
       - name: 启用 Droidspaces 容器支持
         run: |
           if [[ "${{ github.event.inputs.droidspaces_enable }}" != "false" ]]; then
@@ -532,7 +515,6 @@ jobs:
               echo "CONFIG_DRM_LINDROID_EVDI=y" >> ./arch/arm64/configs/gki_defconfig
             fi
           fi
-
       - name: 启用ADIOS IO调度器
         if: inputs.adios_enable
         run: |
@@ -540,7 +522,6 @@ jobs:
           cd kernel_workspace
           echo "CONFIG_MQ_IOSCHED_ADIOS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MQ_IOSCHED_DEFAULT_ADIOS=y" >> ./common/arch/arm64/configs/gki_defconfig
-
       - name: 启用Re-Kernel支持
         if: inputs.rekernel_enable
         run: |
@@ -548,7 +529,6 @@ jobs:
           cd kernel_workspace
           echo "CONFIG_REKERNEL=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_REKERNEL_NETWORK=y" >> ./common/arch/arm64/configs/gki_defconfig
-
       - name: 启用内核级基带保护
         if: inputs.baseband_guard
         run: |
@@ -558,7 +538,6 @@ jobs:
           cd ./common
           curl -sSL https://github.com/cctv18/Baseband-guard/raw/master/setup.sh | bash
           sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' security/Kconfig
-
       - name: 添加制作名称
         run: |
           cd kernel_workspace
@@ -708,7 +687,6 @@ jobs:
           ccache -s
           echo "编译后空间:"
           df -h
-
       - name: 保存新的 ccache 缓存
         if: inputs.ccache_update || steps.ccache-restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
@@ -794,7 +772,6 @@ jobs:
           echo "Re-Kernel: ${{ github.event.inputs.rekernel_enable }}" >> ./ak3.log
           echo "BBG: ${{ github.event.inputs.baseband_guard }}" >> ./ak3.log
           zip -z ../$AK3_NAME < ./ak3.log
-
       - name: 上传 Ccache 调试日志
         if: always() && inputs.ccache_debug
         uses: actions/upload-artifact@v7
@@ -896,7 +873,6 @@ jobs:
           
           #### ※※※刷写内核有风险，为防止出现意外导致手机变砖，在刷入内核前请务必用[KernelFlasher](https://github.com/capntrips/KernelFlasher)等软件备份boot等关键启动分区!※※※
           EOF
-
           gh release create "${{ env.TAG_HEAD }}-${{ env.TIME }}" \
             --repo "${{ github.repository }}" \
             --title "${{ env.TAG_HEAD }}-${{ env.FULL_VERSION }}" \
