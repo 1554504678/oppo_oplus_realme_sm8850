@@ -252,18 +252,26 @@ jobs:
           cd kernel_workspace
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             echo "正在配置SukiSU Ultra..."
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
             echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%@SukiSU-Ultra"' >> ./common/arch/arm64/configs/gki_defconfig
             cd ./KernelSU
-            # 修复 SukiSU Ultra 头文件路径（添加绝对路径 include）
-            KSU_ROOT=$(pwd)
-            echo "ccflags-y += -I${KSU_ROOT}/kernel/include" >> kernel/Kbuild
-            echo "ccflags-y += -I${KSU_ROOT}" >> kernel/Kbuild
+            # builtin 分支的 Makefile 不编译子目录，手动创建完整 Kbuild
+            cat > kernel/Kbuild << 'KBUILD_EOF'
+            ksu-y := ksu.o
+            ksu-y += feature/adb_root.o
+            ksu-y += feature/kernel_umount.o
+            ksu-y += feature/selinux_hide.o
+            ksu-y += feature/sucompat.o
+            ksu-y += feature/sulog.o
+            ksu-y += hook/lsm_hook.o
+            ksu-y += kpm/compact.o
+            ksu-y += kpm/kpm.o
+            ksu-y += kpm/super_access.o
+            ksu-y += manager/apk_sign.o
+            KBUILD_EOF
             # 生成自定义版本号（基于提交计数）, 失败时使用 114514
             KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
             # 存储版本号到 GitHub 环境变量
-            echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-            echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
             echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
@@ -353,12 +361,12 @@ jobs:
             cat >> ./common/fs/Kconfig << 'EOF'
 
           config KSU_SUSFS
-          bool "KernelSU SUSFS support"
-          default y
-          help
-          Enable SUSFS support for KernelSU.
+              bool "KernelSU SUSFS support"
+              default y
+              help
+                Enable SUSFS support for KernelSU.
           EOF
-          fi
+                    fi
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
